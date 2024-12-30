@@ -1,5 +1,4 @@
 Este proyecto funciona con ollama, instalado en windows, aunque quizas tambien se pueda ejecutar en linux,mac
-
 Sirve para generar nodos logicos, que interactuen con el llm ollama.
 
 el Html, genera los nodos, estos son enviados al backend en python, y el backend, se comunica con el server de ollama, debe tenerse instalado ollama, y activo para que levante el server. 
@@ -31,6 +30,12 @@ se ejecuta ollama, que aparesca en la barra de tareas el icono de la llama, o se
 se ejecuta el backend, ya sea el exe, o el .py
 
 y luego se abre el html, que abrira la interface.
+
+NodeuiFixedsave_open.html
+---------------------
+bugs reparados ahora guarda y abre correctamente los nodos
+-----------------------
+
 hay ciertos colores que tienen los nodos, que pueden variar si requieren algo que no tienen,que sirven de guia.
 Verde conecto bien:
 Azul Requiere una entrada( de texto u otro nodo)
@@ -82,12 +87,9 @@ El tilde de Auto-relaunch, sirve para que al llegar al final , comienze nuevamen
 
 de esta manera puede iterar tomando nuevos nombres de una lista, o creando listas nuevas etc.
 
-Save Workflow to file: este nodo guarda el proyecto a un json, pero ahi tengo un bug, que no pude resolver aun, 
-el codigo fue creado con ia , y alcanze el tope disponible gratis, en varias plataformas, no programo en html, pero por mas que entiendo lo basico no he tenido tiempo de ver que esta mal, con lo cual , si alguien entiende el codigo y ve el error, es bienvenida su ayuda, 
-por ahora guarda los nodos y el texto dentro, pero no las uniones, y al abrirlo en open, no muestra las conexiones ni deja reconectarlos, creo que el problema esta en la numeracion de los nodos, o algo asi..
+Save Workflow to file: este nodo guarda el proyecto a un json, 
+habia un bug pero ya fue reparado
 
-quizas alguien que tenga Gpt4o pago o Claude, pueda resolverlo, he intentado con gemini/1.5 pro/2 flast etc, pero no termina de entender la solucion, tambien intente con deepseek, gpt4, y otras mas. Precisa un llm que tenga mucho contexto para solucionar eso, no he tenido mucho tiempo para seguir investigando, algunas cosas las agregue a mano, pero al entender poco y nada de html, tarde mucho tiempo.
-Lamentablemente he perdido mi trabajo despues de 11 años en una escuela, por circunstancias agenas a mi, con lo cual el poco tiempo que tenia libre, desaparecera.
 
 Se aceptan donaciones, para acceder a algun llm que tenga suficiente ventana de contexto, para ver si puedo solucionar ese problema de guardado. y ampliar los nodos.
 
