@@ -1,5 +1,7 @@
 Finally thanks to lia, vs code, and a lot of patience I found all the problems and now saving and loading nodes works.!!!!
-
+--------------------------
+NodeuiFixedsave_open.html
+..........................
 
 This project works with ollama, installed on windows, although it may also be able to run on linux, mac
 
