@@ -1,0 +1,1664 @@
+<html><head><base href="." />
+<title>Simple Workflow Editor</title>
+<style>
+:root {
+    --bg-color: #1e1e1e;
+    --node-bg: #2d2d2d;
+    --node-border: #3d3d3d;
+    --connection-color: #00ff95;
+    --success-border: #28a745;  /* Add this new variable */
+}
+
+@keyframes errorBlink {
+    0% { border-color: var(--node-border); }
+    50% { border-color: #ff4444; }
+    100% { border-color: var(--node-border); }
+}
+
+@keyframes blueBlink {
+    0% { border-color: var(--node-border); }
+    50% { border-color: #007bff; }
+    100% { border-color: var(--node-border); }
+}
+
+.node.success {
+    border-color: var(--success-border);
+    transition: border-color 0.3s ease;
+}
+
+.node.error {
+    animation: errorBlink 1s ease infinite;
+}
+
+.node.receiving {
+    animation: blueBlink 1s ease infinite;
+}
+
+.node.combined {
+    border-color: var(--success-border);
+    transition: border-color 0.3s ease;
+}
+
+body {
+    margin: 0;
+    background: var(--bg-color);
+    font-family: Arial, sans-serif;
+    color: #fff;
+    overflow: hidden;
+}
+
+#workflow-canvas {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    background-image: linear-gradient(#2d2d2d 1px, transparent 1px),
+                      linear-gradient(90deg, #2d2d2d 1px, transparent 1px);
+    background-size: 20px 20px;
+    transform-origin: 0 0;
+    transition: transform 0.1s linear; /* Smoother transform */
+    cursor: default;
+}
+
+#workflow-canvas.panning {
+    cursor: move;
+}
+
+.node {
+    position: absolute;
+    background: var(--node-bg);
+    border: 2px solid var(--node-border);
+    border-radius: 8px;
+    min-width: 200px;
+    padding: 10px;
+    cursor: move;
+    user-select: none;
+}
+
+.node-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--node-border);
+    margin-bottom: 10px;
+}
+
+.node-title {
+    font-weight: bold;
+    margin: 0;
+}
+
+.delete-node {
+    color: #ff4444;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 0 5px;
+}
+
+.delete-node:hover {
+    color: #ff6666;
+}
+
+.port {
+    width: 12px;
+    height: 12px;
+    background: #444;
+    border-radius: 50%;
+    position: absolute;
+    cursor: pointer;
+}
+
+.port:hover {
+    background: var(--connection-color);
+}
+
+.port.input {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.port.output {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.connection {
+    position: absolute;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.node textarea {
+    width: calc(100% - 10px);
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 5px;
+    margin: 5px 0;
+    resize: vertical;
+}
+
+.node button {
+    background: #444;
+    border: none;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.node button:hover {
+    background: #555;
+}
+
+.toolbar {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+}
+
+.toolbar button {
+    background: #444;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.toolbar button:hover {
+    background: #555;
+}
+
+.lock-switch {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.lock-switch input {
+    margin-right: 5px;
+}
+
+.connection-status {
+    margin-top: 5px;
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.zoom-controls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    gap: 10px;
+}
+
+.zoom-controls button {
+    width: 40px;
+    height: 40px;
+    background: #444;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.zoom-controls button:hover {
+    background: #555;
+}
+
+/* Add to existing CSS */
+.direction-controls {
+    position: fixed;
+    bottom: 80px; /* Above zoom controls */
+    right: 20px;
+    z-index: 1000;
+    display: grid;
+    grid-template-columns: repeat(3, 40px);
+    grid-template-rows: repeat(3, 40px);
+    gap: 5px;
+}
+
+.direction-controls button {
+    width: 40px;
+    height: 40px;
+    background: #444;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.direction-controls button:hover {
+    background: #555;
+}
+
+/* Position the buttons in grid */
+.direction-up { grid-column: 2; grid-row: 1; }
+.direction-left { grid-column: 1; grid-row: 2; }
+.direction-right { grid-column: 3; grid-row: 2; }
+.direction-down { grid-column: 2; grid-row: 3; }
+
+
+.footer {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    color: #666;
+    font-size: 12px;
+    z-index: 1000;
+    text-align: left;
+}
+
+.footer p {
+    margin: 5px 0;
+}
+
+.donate-btn {
+    background: #009cde;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.donate-btn:hover {
+    background: #008ac9;
+}
+
+.footer a {
+    color: #009cde;
+    text-decoration: none;
+}
+
+.footer a:hover {
+    text-decoration: underline;
+}
+
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <button onclick="editor.createNode('input', 100, 100)">Add LLM Input</button>
+    <button onclick="editor.createNode('redirect', 100, 100)">Add Redirect</button>
+    <button onclick="editor.createNode('output', 100, 100)">Add Output</button>
+    <button onclick="editor.createNode('router', 100, 100)">Add Router</button>
+    <button onclick="editor.createNode('connection', 100, 100)">Add Connection</button>
+    <button onclick="editor.createNode('combiner', 100, 100)">Add Combiner</button>
+    <button onclick="editor.createNode('text', 100, 100)">Add Text</button>
+    <button onclick="editor.createNode('random', 100, 100)">Add Random</button>
+    <button onclick="editor.createNode('list', 100, 100)">Add List Selection</button>
+    <button onclick="editor.saveWorkflow()">Save Workflow to File</button>
+    <button onclick="editor.openWorkflow()">Open from Storage</button>
+    <button onclick="editor.openWorkflowFromFile()">Open from File</button>
+</div>
+<div id="workflow-canvas"></div>
+
+<div class="direction-controls">
+    <button class="direction-up" onclick="editor.pan('up')">↑</button>
+    <button class="direction-left" onclick="editor.pan('left')">←</button>
+    <button class="direction-right" onclick="editor.pan('right')">→</button>
+    <button class="direction-down" onclick="editor.pan('down')">↓</button>
+</div>
+
+<div class="zoom-controls">
+    <button onclick="editor.zoom('in')">+</button>
+    <button onclick="editor.zoom('out')">−</button>
+</div>
+
+<script>
+class WorkflowEditor {
+    constructor() {
+        this.canvas = document.getElementById('workflow-canvas');
+        this.nodes = new Map();
+        this.connections = new Set();
+        this.draggedNode = null;
+        this.dragOffset = { x: 0, y: 0 };
+        this.connectingPort = null;
+        this.isPanning = false;
+        this.lastPanPoint = { x: 0, y: 0 };
+        this.panOffset = { x: 0, y: 0 };
+        this.setupEventListeners();
+        this.connectionConfig = { ip: 'localhost', port: '5000', model: 'qwen2.5-coder' }; // Default connection config
+        this.zoomLevel = 1;
+        this.setupZoomControls();
+    }
+
+    setupEventListeners() {
+        this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+        this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
+        
+        // Prevent context menu on right click
+        this.canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Handle mouse down for panning
+        this.canvas.addEventListener('mousedown', (e) => {
+            // Only start panning on right click
+            if (e.button === 2) {
+                this.isPanning = true;
+                this.lastPanPoint = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        // Update mouse up to handle panning
+        document.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                this.isPanning = false;
+            }
+            this.handleMouseUp(e);
+        });
+    }
+
+    setupZoomControls() {
+        // Create zoom controls container
+        const zoomControls = document.createElement('div');
+        zoomControls.className = 'zoom-controls';
+        
+        // Create zoom in button
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.textContent = '+';
+        zoomInBtn.onclick = () => this.zoom('in');
+        
+        // Create zoom out button
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.textContent = '−';
+        zoomOutBtn.onclick = () => this.zoom('out');
+        
+        // Add buttons to container
+        zoomControls.appendChild(zoomInBtn);
+        zoomControls.appendChild(zoomOutBtn);
+        
+        // Add container to document
+        document.body.appendChild(zoomControls);
+    }
+
+    pan(direction) {
+        const PAN_STEP = 50; // Pixels to pan per click
+        
+        switch(direction) {
+            case 'up':
+                this.panOffset.y += PAN_STEP;
+                break;
+            case 'down':
+                this.panOffset.y -= PAN_STEP;
+                break;
+            case 'left':
+                this.panOffset.x += PAN_STEP;
+                break;
+            case 'right':
+                this.panOffset.x -= PAN_STEP;
+                break;
+        }
+        
+        // Apply both zoom and pan transform
+        this.canvas.style.transform = `scale(${this.zoomLevel}) translate(${this.panOffset.x/this.zoomLevel}px, ${this.panOffset.y/this.zoomLevel}px)`;
+        
+        // Update connections after panning
+        this.updateConnections();
+    }
+
+    zoom(direction) {
+        const ZOOM_STEP = 0.1;
+        const MIN_ZOOM = 0.5;
+        const MAX_ZOOM = 2;
+
+        if (direction === 'in' && this.zoomLevel < MAX_ZOOM) {
+            this.zoomLevel += ZOOM_STEP;
+        } else if (direction === 'out' && this.zoomLevel > MIN_ZOOM) {
+            this.zoomLevel -= ZOOM_STEP;
+        }
+
+        // Apply both zoom and pan transform
+        this.canvas.style.transform = `scale(${this.zoomLevel}) translate(${this.panOffset.x/this.zoomLevel}px, ${this.panOffset.y/this.zoomLevel}px)`;
+        
+        // Update the canvas size to accommodate zoomed content
+        const width = 100 / this.zoomLevel;
+        const height = 100 / this.zoomLevel;
+        this.canvas.style.width = `${width}vw`;
+        this.canvas.style.height = `${height}vh`;
+        
+        // Force connection update after zoom
+        this.updateConnections();
+    }
+
+    handleMouseMove(e) {
+        if (this.isPanning) {
+            const dx = e.clientX - this.lastPanPoint.x;
+            const dy = e.clientY - this.lastPanPoint.y;
+            
+            this.panOffset.x += dx;
+            this.panOffset.y += dy;
+            
+            this.canvas.style.transform = `scale(${this.zoomLevel}) translate(${this.panOffset.x/this.zoomLevel}px, ${this.panOffset.y/this.zoomLevel}px)`;
+            
+            this.lastPanPoint = { x: e.clientX, y: e.clientY };
+            this.updateConnections();
+            return;
+        }
+
+        if (this.draggedNode) {
+            const x = (e.clientX - this.dragOffset.x) / this.zoomLevel;
+            const y = (e.clientY - this.dragOffset.y) / this.zoomLevel;
+            this.draggedNode.style.left = `${x}px`;
+            this.draggedNode.style.top = `${y}px`;
+            this.updateConnections();
+        }
+        
+        if (this.connectingPort && this.tempConnection) {
+            const startPort = this.connectingPort;
+            const startRect = startPort.getBoundingClientRect();
+            const startX = (startRect.left + startRect.width / 2) / this.zoomLevel;
+            const startY = (startRect.top + startRect.height / 2) / this.zoomLevel;
+            
+            this.updateConnectionPath(this.tempConnection, 
+                startX, startY, 
+                e.clientX / this.zoomLevel, 
+                e.clientY / this.zoomLevel);
+        }
+    }
+
+    handleMouseUp(e) {
+        if (this.draggedNode) {
+            this.draggedNode = null;
+        }
+
+        if (this.connectingPort) {
+            const endPort = this.getPortAtPosition(e.clientX, e.clientY);
+            if (endPort && this.canConnect(this.connectingPort, endPort)) {
+                this.createConnectionBetweenPorts(this.connectingPort, endPort);
+            }
+            if (this.tempConnection) {
+                this.tempConnection.remove();
+            }
+            this.connectingPort = null;
+            this.tempConnection = null;
+        }
+    }
+
+    createNode(type, x, y) {
+        const node = document.createElement('div');
+        node.className = 'node';
+        node.style.left = `${x}px`;
+        node.style.top = `${y}px`;
+        
+        const nodeId = `node-${Date.now()}`;
+        node.id = nodeId;
+        
+        // Create header container
+        const header = document.createElement('div');
+        header.className = 'node-header';
+        
+        const title = document.createElement('div');
+        title.className = 'node-title';
+        
+        // Create delete button
+        const deleteBtn = document.createElement('span');
+        deleteBtn.className = 'delete-node';
+        deleteBtn.textContent = '×';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.deleteNode(nodeId);
+        };
+        
+        header.appendChild(title);
+        header.appendChild(deleteBtn);
+        
+        const inputPort = document.createElement('div');
+        inputPort.className = 'port input';
+        inputPort.dataset.nodeId = nodeId;
+        
+        const outputPort = document.createElement('div');
+        outputPort.className = 'port output';
+        outputPort.dataset.nodeId = nodeId;
+
+        switch(type) {
+            case 'input':
+                title.textContent = 'LLM Input';
+                const promptInput = document.createElement('textarea');
+                promptInput.placeholder = 'Enter your prompt here...';
+                promptInput.rows = 4;
+                const sendButton = document.createElement('button');
+                sendButton.textContent = 'Send to LLM';
+                sendButton.onclick = () => {
+                    // Check if input is empty
+                    if (!promptInput.value.trim()) {
+                        node.classList.remove('success', 'error');
+                        node.classList.add('receiving'); // Blue blink
+                        return;
+                    }
+
+                    // Check if there are output connections
+                    const hasConnections = Array.from(this.connections).some(
+                        conn => conn.dataset.outputNodeId === nodeId
+                    );
+
+                    if (!hasConnections) {
+                        node.classList.remove('success', 'receiving');
+                        node.classList.add('error'); // Red blink
+                        return;
+                    }
+
+                    // If we have content and connections, proceed with LLM request
+                    node.classList.remove('receiving', 'error');
+                    node.classList.add('success'); // Green
+                    this.handleLLMRequest(nodeId, promptInput.value);
+                };
+                node.appendChild(header);
+                node.appendChild(promptInput);
+                node.appendChild(sendButton);
+                node.appendChild(outputPort);
+                break;
+
+            case 'redirect':
+                title.textContent = 'Redirect Node';
+                const redirectPrompt = document.createElement('textarea');
+                redirectPrompt.placeholder = 'Enter redirect prompt...';
+                redirectPrompt.rows = 2;
+                const lockDiv = document.createElement('div');
+                lockDiv.className = 'lock-switch';
+                const lockInput = document.createElement('input');
+                lockInput.type = 'checkbox';
+                lockInput.id = `lock-${nodeId}`;
+                const lockLabel = document.createElement('label');
+                lockLabel.textContent = 'Lock';
+                lockLabel.htmlFor = `lock-${nodeId}`;
+                lockDiv.appendChild(lockInput);
+                lockDiv.appendChild(lockLabel);
+                node.appendChild(header);
+                node.appendChild(redirectPrompt);
+                node.appendChild(lockDiv);
+                node.appendChild(inputPort);
+                node.appendChild(outputPort);
+                break;
+
+            case 'output':
+                title.textContent = 'Output Viewer';
+                
+                // Add filename input container
+                const filenameContainer = document.createElement('div');
+                filenameContainer.style.marginBottom = '10px';
+                
+                const filenameLabel = document.createElement('label');
+                filenameLabel.textContent = 'Output filename: ';
+                filenameLabel.style.marginRight = '5px';
+                
+                const filenameInput = document.createElement('input');
+                filenameInput.type = 'text';
+                filenameInput.value = `output_${Date.now()}`; // Default unique filename
+                filenameInput.style.width = '120px';
+                filenameInput.style.background = '#1a1a1a';
+                filenameInput.style.border = '1px solid #444';
+                filenameInput.style.color = '#fff';
+                filenameInput.style.padding = '3px';
+                
+                const fileExtension = document.createElement('span');
+                fileExtension.textContent = '.txt';
+                fileExtension.style.marginLeft = '2px';
+                fileExtension.style.color = '#888';
+                
+                // Add auto-relaunch checkbox
+                const autoRelaunchContainer = document.createElement('div');
+                autoRelaunchContainer.style.marginBottom = '10px';
+                
+                const autoRelaunchCheckbox = document.createElement('input');
+                autoRelaunchCheckbox.type = 'checkbox';
+                autoRelaunchCheckbox.id = `auto-relaunch-${Date.now()}`;
+                autoRelaunchCheckbox.style.marginRight = '5px';
+                
+                const autoRelaunchLabel = document.createElement('label');
+                autoRelaunchLabel.textContent = 'Auto-relaunch nodes on output';
+                autoRelaunchLabel.htmlFor = autoRelaunchCheckbox.id;
+                
+                autoRelaunchContainer.appendChild(autoRelaunchCheckbox);
+                autoRelaunchContainer.appendChild(autoRelaunchLabel);
+                
+                filenameContainer.appendChild(filenameLabel);
+                filenameContainer.appendChild(filenameInput);
+                filenameContainer.appendChild(fileExtension);
+                
+                const outputArea = document.createElement('textarea');
+                outputArea.readOnly = true;
+                outputArea.rows = 6;
+                outputArea.placeholder = 'Output will appear here...';
+                
+                node.appendChild(header);
+                node.appendChild(filenameContainer);
+                node.appendChild(autoRelaunchContainer);
+                node.appendChild(outputArea);
+                node.appendChild(inputPort);
+                node.appendChild(outputPort); // Add output port after input port
+                break;
+
+            case 'router':
+                title.textContent = 'Router';
+                const outputPort2 = document.createElement('div');
+                outputPort2.className = 'port output';
+                outputPort2.style.top = '70%';
+                outputPort2.dataset.nodeId = nodeId;
+                outputPort2.dataset.portIndex = '1';
+                node.appendChild(header);
+                node.appendChild(inputPort);
+                node.appendChild(outputPort);
+                node.appendChild(outputPort2);
+                
+                // Check initial router state
+                setTimeout(() => {
+                    const routerConnections = Array.from(this.connections).filter(
+                        conn => conn.dataset.outputNodeId === nodeId || conn.dataset.inputNodeId === nodeId
+                    );
+                    if (routerConnections.length === 0) {
+                        node.classList.add('error');
+                    }
+                }, 100);
+                break;
+
+            case 'connection':
+                title.textContent = 'Connection Settings';
+                const connectionSettings = document.createElement('div');
+                connectionSettings.style.padding = '10px 0';
+                
+                // Add model selector dropdown
+                const modelSelect = document.createElement('select');
+                modelSelect.style.width = '100%';
+                modelSelect.style.marginBottom = '5px';
+                modelSelect.style.padding = '5px';
+                modelSelect.style.background = '#1a1a1a';
+                modelSelect.style.border = '1px solid #444';
+                modelSelect.style.color = '#fff';
+                
+                // Add model options
+                const models = ['llama2', 'llama3', 'qwen2.5-coder'];
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+                });
+                
+                const ipInput = document.createElement('input');
+                ipInput.type = 'text';
+                ipInput.placeholder = 'IP (e.g. localhost)';
+                ipInput.style.width = '100%';
+                ipInput.style.marginBottom = '5px';
+                ipInput.style.padding = '5px';
+                ipInput.style.background = '#1a1a1a';
+                ipInput.style.border = '1px solid #444';
+                ipInput.style.color = '#fff';
+                ipInput.value = 'localhost';
+                
+                const portInput = document.createElement('input');
+                portInput.type = 'text';
+                portInput.placeholder = 'Port (e.g. 5000)';
+                portInput.style.width = '100%';
+                portInput.style.marginBottom = '5px';
+                portInput.style.padding = '5px';
+                portInput.style.background = '#1a1a1a';
+                portInput.style.border = '1px solid #444';
+                portInput.style.color = '#fff';
+                portInput.value = '5000';
+                
+                const connectButton = document.createElement('button');
+                connectButton.textContent = 'Test Connection';
+                connectButton.onclick = async () => {
+                    const ip = ipInput.value || 'localhost';
+                    const port = portInput.value || '5000';
+                    const model = modelSelect.value;
+                    await this.testConnection(ip, port, model);
+                };
+                
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'connection-status';
+                statusDiv.style.marginTop = '5px';
+                statusDiv.style.padding = '5px';
+                statusDiv.style.borderRadius = '4px';
+                
+                const consoleOutput = document.createElement('textarea');
+                consoleOutput.className = 'console-output';
+                consoleOutput.readOnly = true;
+                consoleOutput.rows = 3;
+                consoleOutput.placeholder = 'Connection test responses will appear here...';
+                consoleOutput.style.width = '100%';
+                consoleOutput.style.marginTop = '5px';
+                consoleOutput.style.padding = '5px';
+                consoleOutput.style.background = '#1a1a1a';
+                consoleOutput.style.border = '1px solid #444';
+                consoleOutput.style.color = '#fff';
+                consoleOutput.style.fontFamily = 'monospace';
+                consoleOutput.style.fontSize = '12px';
+                consoleOutput.style.resize = 'vertical';
+                
+                connectionSettings.appendChild(modelSelect);
+                connectionSettings.appendChild(ipInput);
+                connectionSettings.appendChild(portInput);
+                connectionSettings.appendChild(connectButton);
+                connectionSettings.appendChild(statusDiv);
+                connectionSettings.appendChild(consoleOutput);
+                
+                node.appendChild(header);
+                node.appendChild(connectionSettings);
+                
+                // Store connection info globally
+                this.connectionConfig = {
+                    ip: ipInput.value || 'localhost',
+                    port: portInput.value || '5000',
+                    model: modelSelect.value
+                };
+                
+                // Update connection config when inputs change
+                ipInput.addEventListener('change', () => {
+                    this.connectionConfig.ip = ipInput.value;
+                });
+                
+                portInput.addEventListener('change', () => {
+                    this.connectionConfig.port = portInput.value;
+                });
+                
+                modelSelect.addEventListener('change', () => {
+                    this.connectionConfig.model = modelSelect.value;
+                });
+                
+                break;
+
+            case 'combiner':
+                title.textContent = 'Combiner';
+                
+                // Create two input ports with distinct dataset values
+                const inputPort1 = document.createElement('div');
+                inputPort1.className = 'port input';
+                inputPort1.style.top = '30%';
+                inputPort1.dataset.nodeId = nodeId;
+                inputPort1.dataset.portIndex = '1';
+                
+                const inputPort2 = document.createElement('div');
+                inputPort2.className = 'port input';
+                inputPort2.style.top = '70%';
+                inputPort2.dataset.nodeId = nodeId;
+                inputPort2.dataset.portIndex = '2';
+                
+                // Create two display areas
+                const display1 = document.createElement('textarea');
+                display1.readOnly = true;
+                display1.rows = 3;
+                display1.placeholder = 'First input will appear here...';
+                display1.dataset.inputIndex = '1';
+                
+                const display2 = document.createElement('textarea');
+                display2.readOnly = true;
+                display2.rows = 3;
+                display2.placeholder = 'Second input will appear here...';
+                display2.dataset.inputIndex = '2';
+                
+                node.appendChild(header);
+                node.appendChild(display1);
+                node.appendChild(display2);
+                node.appendChild(inputPort1);
+                node.appendChild(inputPort2);
+                node.appendChild(outputPort);
+                
+                // Add data storage to node
+                node.dataset.input1 = '';
+                node.dataset.input2 = '';
+                break;
+
+            case 'text':
+                title.textContent = 'Text Input';
+                const textInput = document.createElement('textarea');
+                textInput.placeholder = 'Enter your text here...';
+                textInput.rows = 4;
+                const sendTextButton = document.createElement('button');
+                sendTextButton.textContent = 'Send Text';
+                sendTextButton.onclick = () => this.propagateData(nodeId, textInput.value);
+                node.appendChild(header);
+                node.appendChild(textInput);
+                node.appendChild(sendTextButton);
+                node.appendChild(outputPort);
+                
+                // Check initial connections
+                setTimeout(() => {
+                    const connections = Array.from(this.connections).filter(
+                        conn => conn.dataset.outputNodeId === nodeId
+                    );
+                    if (connections.length > 0) {
+                        node.classList.add('success');
+                    }
+                }, 100);
+                break;
+
+        case 'random':
+            title.textContent = 'Random Selection';
+            const randomInput = document.createElement('textarea');
+            randomInput.placeholder = 'Enter options separated by semicolons (;)\nExample: Red;Green;Blue';
+            randomInput.rows = 4;
+            const sendRandomButton = document.createElement('button');
+            sendRandomButton.textContent = 'Pick Random';
+            
+            let randomOptions = [];  // Store options for this node
+
+            sendRandomButton.onclick = () => {
+                const text = randomInput.value.trim();
+                if (text) {
+                    randomOptions = text.split(';').filter(opt => opt.trim());
+                }
+
+                if (randomOptions.length <= 1) { // Check if enough options after parsing
+                    node.classList.remove('success', 'error');
+                    node.classList.add('receiving'); // Blue blink for invalid input
+                    return;
+                }
+                const randomOption = randomOptions[Math.floor(Math.random() * randomOptions.length)];
+                this.propagateData(nodeId, randomOption.trim());
+                node.classList.remove('receiving', 'error'); // Remove invalid/error state
+                node.classList.add('success'); // Add success state
+            };
+            node.appendChild(header);
+            node.appendChild(randomInput);
+            node.appendChild(sendRandomButton);
+            node.appendChild(outputPort);
+            node.appendChild(inputPort);  // Add input port
+            node.appendChild(inputPort);  // Add input port
+            break;
+
+        case 'list':
+            title.textContent = 'List Selection';
+            const listInput = document.createElement('textarea');
+            listInput.placeholder = 'Enter options separated by semicolons (;)\nExample: Red;Green;Blue';
+            listInput.rows = 4;
+            node.dataset.currentIndex = '0';
+            let listOptions = []; // Store options for this node
+
+            const sendListButton = document.createElement('button');
+            sendListButton.textContent = 'Pick List';
+            sendListButton.onclick = () => {
+                const text = listInput.value.trim();
+
+                if (text) {
+                    listOptions = text.split(';').filter(opt => opt.trim());
+                }
+
+                if (listOptions.length === 0) {
+                    node.classList.remove('success');
+                    node.classList.add('error');
+                    return;
+                }
+
+                let currentIndex = parseInt(node.dataset.currentIndex) || 0;
+
+                if (currentIndex >= listOptions.length) {
+                    currentIndex = 0;  // Reset to beginning of list if end is reached
+                }
+
+                const selectedOption = listOptions[currentIndex];
+                node.dataset.currentIndex = (currentIndex + 1).toString();
+
+                this.propagateData(nodeId, selectedOption.trim());
+                node.classList.remove('receiving', 'error');
+                node.classList.add('success');
+            };
+
+            node.appendChild(header);
+            node.appendChild(listInput);
+            node.appendChild(sendListButton);
+            node.appendChild(outputPort);
+            node.appendChild(inputPort);  // Add input port
+            node.appendChild(inputPort);  // Add input port
+            break;
+        }
+
+        this.setupNodeDragging(node);
+        this.setupPortConnections(node);
+        
+        this.canvas.appendChild(node);
+        this.nodes.set(nodeId, { type, element: node });
+        
+        return node;
+    }
+
+    setupNodeDragging(node) {
+        node.addEventListener('mousedown', (e) => {
+            if (e.target === node || e.target.className === 'node-title') {
+                this.draggedNode = node;
+                const rect = node.getBoundingClientRect();
+                this.dragOffset = {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+        });
+    }
+
+    setupPortConnections(node) {
+        const ports = node.querySelectorAll('.port');
+        ports.forEach(port => {
+            port.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                this.connectingPort = port;
+                this.tempConnection = this.createConnection();
+            });
+        });
+    }
+
+    getPortAtPosition(x, y) {
+        const ports = document.querySelectorAll('.port');
+        const zoomedX = x / this.zoomLevel;
+        const zoomedY = y / this.zoomLevel;
+        
+        for (const port of ports) {
+            const rect = port.getBoundingClientRect();
+            const portX = rect.left / this.zoomLevel;
+            const portY = rect.top / this.zoomLevel;
+            const portWidth = rect.width / this.zoomLevel;
+            const portHeight = rect.height / this.zoomLevel;
+            
+            if (zoomedX >= portX && zoomedX <= portX + portWidth && 
+                zoomedY >= portY && zoomedY <= portY + portHeight) {
+                return port;
+            }
+        }
+        return null;
+    }
+
+    canConnect(port1, port2) {
+        if (port1 === port2) return false;
+        if (port1.closest('.node') === port2.closest('.node')) return false;
+        return (port1.classList.contains('output') && port2.classList.contains('input')) ||
+               (port1.classList.contains('input') && port2.classList.contains('output'));
+    }
+
+    createConnection() {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'connection');
+        svg.style.position = 'absolute';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.pointerEvents = 'none';
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke', 'var(--connection-color)');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('fill', 'none');
+
+        svg.appendChild(path);
+        this.canvas.appendChild(svg);
+        return svg;
+    }
+
+    createConnectionBetweenPorts(port1, port2) {
+        const connection = this.createConnection();
+        const [outputPort, inputPort] = port1.classList.contains('output') ? 
+            [port1, port2] : [port2, port1];
+
+        connection.dataset.outputNodeId = outputPort.dataset.nodeId;
+        connection.dataset.inputNodeId = inputPort.dataset.nodeId;
+        
+        // Store port indices for both input and output ports
+        if (outputPort.dataset.portIndex) {
+            connection.dataset.outputPortIndex = outputPort.dataset.portIndex;
+        }
+        if (inputPort.dataset.portIndex) {
+            connection.dataset.inputPortIndex = inputPort.dataset.portIndex;
+        }
+
+        this.connections.add(connection);
+        this.updateConnections();
+    }
+
+    updateConnections() {
+        this.connections.forEach(connection => {
+            const outputNode = document.getElementById(connection.dataset.outputNodeId);
+            const inputNode = document.getElementById(connection.dataset.inputNodeId);
+            
+            if (!outputNode || !inputNode) {
+                connection.remove();
+                this.connections.delete(connection);
+                return;
+            }
+
+            const outputPort = outputNode.querySelector(connection.dataset.outputPortIndex ? 
+                `.output[data-port-index="${connection.dataset.outputPortIndex}"]` : 
+                '.output');
+                
+            const inputPort = inputNode.querySelector(connection.dataset.inputPortIndex ? 
+                `.input[data-port-index="${connection.dataset.inputPortIndex}"]` : 
+                '.input');
+
+            if (!outputPort || !inputPort) {
+                connection.remove();
+                this.connections.delete(connection);
+                return;
+            }
+
+            // Get port positions accounting for zoom and pan
+            const outputRect = outputPort.getBoundingClientRect();
+            const inputRect = inputPort.getBoundingClientRect();
+            const canvasRect = this.canvas.getBoundingClientRect();
+
+            // Calculate positions relative to canvas, accounting for zoom
+            const x1 = (outputRect.left + outputRect.width / 2 - canvasRect.left) / this.zoomLevel;
+            const y1 = (outputRect.top + outputRect.height / 2 - canvasRect.top) / this.zoomLevel;
+            const x2 = (inputRect.left + inputRect.width / 2 - canvasRect.left) / this.zoomLevel;
+            const y2 = (inputRect.top + inputRect.height / 2 - canvasRect.top) / this.zoomLevel;
+
+            this.updateConnectionPath(connection, x1, y1, x2, y2);
+        });
+    }
+
+    updateConnectionPath(connection, x1, y1, x2, y2) {
+        const path = connection.querySelector('path');
+        const dx = x2 - x1;
+        const controlPoint = Math.min(Math.abs(dx) * 0.5, 100);
+        path.setAttribute('d', `M ${x1} ${y1} C ${x1 + controlPoint} ${y1}, ${x2 - controlPoint} ${y2}, ${x2} ${y2}`);
+    }
+
+    async handleLLMRequest(nodeId, prompt) {
+        try {
+            const { ip, port, model } = this.connectionConfig || { 
+                ip: 'localhost', 
+                port: '5000',
+                model: 'qwen2.5-coder'  // default model
+            };
+            
+            const response = await fetch(`http://${ip}:${port}/api/query`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    prompt: prompt
+                })
+            });
+            
+            const data = await response.text();
+            this.propagateData(nodeId, data);
+        } catch (error) {
+            console.error('Error making LLM request:', error);
+        }
+    }
+
+    async testConnection(ip, port, model) {
+        const connectionNode = Array.from(this.nodes.values())
+            .find(node => node.type === 'connection');
+        
+        if (!connectionNode) {
+            console.error('Connection node not found');
+            return;
+        }
+        
+        const statusDiv = connectionNode.element.querySelector('.connection-status');
+        const consoleOutput = connectionNode.element.querySelector('.console-output');
+        
+        try {
+            const response = await fetch(`http://${ip}:${port}/api/query`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: model,
+                    prompt: 'test connection'
+                })
+            });
+            
+            const responseText = await response.text();
+            
+            if (response.ok) {
+                statusDiv.textContent = 'Connection successful!';
+                statusDiv.style.background = '#28a745';
+                this.connectionConfig = { ip, port, model };
+                
+                // Change border color of connection node to green
+                connectionNode.element.style.borderColor = 'var(--success-border)';
+                
+                // Update console output
+                const timestamp = new Date().toLocaleTimeString();
+                consoleOutput.value += `[${timestamp}] Connection test successful\n`;
+                consoleOutput.value += `Response: ${responseText}\n\n`;
+            } else {
+                statusDiv.textContent = 'Connection failed!';
+                statusDiv.style.background = '#dc3545';
+                
+                // Reset border color
+                connectionNode.element.style.borderColor = 'var(--node-border)';
+                
+                // Update console output
+                const timestamp = new Date().toLocaleTimeString();
+                consoleOutput.value += `[${timestamp}] Connection failed\n`;
+                consoleOutput.value += `Error: ${responseText}\n\n`;
+            }
+            
+            // Scroll console to bottom
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            
+        } catch (error) {
+            statusDiv.textContent = `Error: ${error.message}`;
+            statusDiv.style.background = '#dc3545';
+            
+            // Reset border color
+            connectionNode.element.style.borderColor = 'var(--node-border)';
+            
+            // Update console output
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.value += `[${timestamp}] Connection error\n`;
+            consoleOutput.value += `${error.message}\n\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+    }
+
+    propagateData(sourceNodeId, data) {
+        const connections = Array.from(this.connections).filter(
+            conn => conn.dataset.outputNodeId === sourceNodeId
+        );
+
+        // Reset router error state if it has connections
+        const sourceNode = this.nodes.get(sourceNodeId);
+        if (sourceNode && sourceNode.type === 'router') {
+            if (connections.length > 0) {
+                sourceNode.element.classList.remove('error');
+                sourceNode.element.classList.add('success');
+            } else {
+                sourceNode.element.classList.remove('success');
+                sourceNode.element.classList.add('error');
+            }
+        }
+
+        connections.forEach(connection => {
+            const targetNodeId = connection.dataset.inputNodeId;
+            const targetNode = this.nodes.get(targetNodeId);
+            
+            if (targetNode.type === 'redirect') {
+                const isLocked = targetNode.element.querySelector('input[type="checkbox"]').checked;
+                const redirectPrompt = targetNode.element.querySelector('textarea').value;
+                
+                if (!isLocked) {
+                    this.propagateData(targetNodeId, data);
+                } else {
+                    // If locked, combine prompt with incoming data and propagate
+                    const combinedData = `${redirectPrompt}\n${data}`;
+                    this.handleLLMRequest(targetNodeId, combinedData);
+                }
+            } else if (targetNode.type === 'output') {
+                const outputArea = targetNode.element.querySelector('textarea');
+                const filenameInput = targetNode.element.querySelector('input[type="text"]');
+                const autoRelaunchCheckbox = targetNode.element.querySelector('input[type="checkbox"]');
+                outputArea.value = data;
+                
+                // Generate unique filename if needed
+                let filename = filenameInput.value;
+                if (!filename) {
+                    filename = `output_${Date.now()}`;
+                    filenameInput.value = filename;
+                }
+                
+                // Create file and trigger download
+                const blob = new Blob([data], { type: 'text/plain' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `${filename}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+                
+                // Add success state to output node
+                targetNode.element.classList.add('success');
+
+                // Only trigger relaunches if checkbox is checked
+                if (autoRelaunchCheckbox.checked) {
+                    // Trigger all Random, List and LLM Input nodes to pick next
+                    this.nodes.forEach((node, id) => {
+                        if (node.type === 'random' || node.type === 'list') {
+                            const button = node.element.querySelector('button');
+                            if (button) {
+                                button.click();
+                            }
+                        } else if (node.type === 'input') {
+                            const sendButton = node.element.querySelector('button');
+                            const textarea = node.element.querySelector('textarea');
+                            if (sendButton && textarea.value.trim()) {
+                                sendButton.click();
+                            }
+                        }
+                    });
+                }
+
+                // Propagate the data to any connected nodes
+                this.propagateData(targetNodeId, data);
+            } else if (targetNode.type === 'router') {
+                // Add success state to router when receiving data
+                targetNode.element.classList.remove('error');
+                targetNode.element.classList.add('success');
+                this.propagateData(targetNodeId, data);
+            } else if (targetNode.type === 'combiner') {
+                const portIndex = connection.dataset.inputPortIndex || '1';
+                const display = targetNode.element.querySelector(`textarea[data-input-index="${portIndex}"]`);
+                
+                if (display) {
+                    display.value = data;
+                    targetNode.element.dataset[`input${portIndex}`] = data;
+                    
+                    // Check if both inputs have data
+                    if (targetNode.element.dataset.input1 && targetNode.element.dataset.input2) {
+                        targetNode.element.classList.remove('receiving');
+                        targetNode.element.classList.add('combined');
+                        
+                        // Combine data and propagate
+                        const combinedData = `${targetNode.element.dataset.input1}\n${targetNode.element.dataset.input2}`;
+                        
+                        // Check if there are any output connections
+                        const hasOutputConnections = Array.from(this.connections).some(
+                            conn => conn.dataset.outputNodeId === targetNodeId
+                        );
+                        
+                        if (hasOutputConnections) {
+                            this.propagateData(targetNodeId, combinedData);
+                        } else {
+                            targetNode.element.classList.add('error');
+                        }
+                    } else {
+                        targetNode.element.classList.remove('error');
+                        targetNode.element.classList.add('receiving');
+                    }
+                }
+            } else if (targetNode.type === 'text') {
+                this.propagateData(targetNodeId, data);
+        } else if (targetNode.type === 'random') {
+            const randomInputArea = targetNode.element.querySelector('textarea');
+            if (data) {
+                randomInputArea.value = data; // Update textarea with incoming data
+            }
+            const sendRandomButton = targetNode.element.querySelector('button');
+            sendRandomButton.click(); // Trigger random selection
+        } else if (targetNode.type === 'list') {
+            const listInputArea = targetNode.element.querySelector('textarea');
+            if (data) {
+                listInputArea.value = data; // Update textarea with incoming data
+            }
+            const sendListButton = targetNode.element.querySelector('button');
+            sendListButton.click(); // Trigger list selection
+        }
+        });
+
+        // Check router nodes for no connections
+        this.nodes.forEach((node, nodeId) => {
+            if (node.type === 'router') {
+                const routerConnections = Array.from(this.connections).filter(
+                    conn => conn.dataset.outputNodeId === nodeId || conn.dataset.inputNodeId === nodeId
+                );
+                
+                if (routerConnections.length === 0) {
+                    node.element.classList.remove('success');
+                    node.element.classList.add('error');
+                }
+            }
+        });
+    }
+
+    deleteNode(nodeId) {
+        const node = document.getElementById(nodeId);
+        if (!node) return;
+
+        // Remove all connections associated with this node
+        const connectionsToRemove = Array.from(this.connections).filter(conn => 
+            conn.dataset.inputNodeId === nodeId || conn.dataset.outputNodeId === nodeId
+        );
+
+        connectionsToRemove.forEach(conn => {
+            conn.remove();
+            this.connections.delete(conn);
+        });
+
+        // Remove the node from the nodes Map and the DOM
+        this.nodes.delete(nodeId);
+        node.remove();
+
+        // Recheck router states
+        this.nodes.forEach((node, nodeId) => {
+            if (node.type === 'router') {
+                const routerConnections = Array.from(this.connections).filter(
+                    conn => conn.dataset.outputNodeId === nodeId || conn.dataset.inputNodeId === nodeId
+                );
+                
+                if (routerConnections.length === 0) {
+                    node.element.classList.remove('success');
+                    node.element.classList.add('error');
+                }
+            }
+        });
+
+        if (node.dataset) {
+            delete node.dataset.input1;
+            delete node.dataset.input2;
+        }
+    }
+
+    saveWorkflow() {
+        const workflowName = prompt('Enter workflow name:', 'workflow1');
+        if (!workflowName) return;
+
+        const workflow = {
+            nodes: Array.from(this.nodes.entries()).map(([id, node]) => ({
+                id,
+                type: node.type,
+                position: {
+                    left: node.element.style.left,
+                    top: node.element.style.top
+                },
+                data: this.getNodeData(node)
+            })),
+            connections: Array.from(this.connections).map(conn => ({
+                outputNodeId: conn.dataset.outputNodeId,
+                inputNodeId: conn.dataset.inputNodeId,
+                outputPortIndex: conn.dataset.outputPortIndex,
+                inputPortIndex: conn.dataset.inputPortIndex
+            })),
+            connectionConfig: this.connectionConfig
+        };
+
+        // Create and trigger download with file save dialog
+        const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `workflow_${workflowName}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        alert(`Workflow "${workflowName}" saved as workflow_${workflowName}.json`);
+    }
+
+    openWorkflowFromFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    // Clear current workflow
+                    this.clearWorkflow();
+
+                    // Load workflow
+                    const workflow = JSON.parse(e.target.result);
+                    
+                    // Restore connection config
+                    this.connectionConfig = workflow.connectionConfig;
+
+                    // Create nodes
+                    workflow.nodes.forEach(nodeData => {
+                        const node = this.createNode(
+                            nodeData.type,
+                            parseInt(nodeData.position.left),
+                            parseInt(nodeData.position.top)
+                        );
+                        
+                        // Restore node-specific data
+                        this.restoreNodeData(node, nodeData.type, nodeData.data);
+                    });
+
+                    // Recreate connections
+                    workflow.connections.forEach(conn => {
+                        const outputPort = document.querySelector(
+                            `#${conn.outputNodeId} .output${conn.outputPortIndex ? 
+                            `[data-port-index="${conn.outputPortIndex}"]` : ''}`
+                        );
+                        const inputPort = document.querySelector(
+                            `#${conn.inputNodeId} .input${conn.inputPortIndex ? 
+                            `[data-port-index="${conn.inputPortIndex}"]` : ''}`
+                        );
+                        if (outputPort && inputPort) {
+                            this.createConnectionBetweenPorts(outputPort, inputPort);
+                        }
+                    });
+
+                } catch (error) {
+                    alert('Error loading workflow file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        };
+
+        input.click();
+    }
+
+    openWorkflow() {
+        // Get list of saved workflows
+        const workflows = Object.keys(localStorage)
+            .filter(key => key.startsWith('workflow_'))
+            .map(key => key.replace('workflow_', ''));
+
+        if (workflows.length === 0) {
+            alert('No saved workflows found!');
+            return;
+        }
+
+        const workflowName = prompt(
+            'Enter workflow name to load:\n\nAvailable workflows:\n' + 
+            workflows.join('\n')
+        );
+
+        if (!workflowName) return;
+
+        const workflowData = localStorage.getItem(`workflow_${workflowName}`);
+        if (!workflowData) {
+            alert('Workflow not found!');
+            return;
+        }
+
+        // Clear current workflow
+        this.clearWorkflow();
+
+        // Load workflow
+        const workflow = JSON.parse(workflowData);
+        
+        // Restore connection config
+        this.connectionConfig = workflow.connectionConfig;
+
+        // Create nodes
+        workflow.nodes.forEach(nodeData => {
+            const node = this.createNode(
+                nodeData.type,
+                parseInt(nodeData.position.left),
+                parseInt(nodeData.position.top)
+            );
+            
+            // Restore node-specific data
+            this.restoreNodeData(node, nodeData.type, nodeData.data);
+        });
+
+        // Recreate connections
+        workflow.connections.forEach(conn => {
+            const outputPort = document.querySelector(
+                `#${conn.outputNodeId} .output${conn.outputPortIndex ? 
+                `[data-port-index="${conn.outputPortIndex}"]` : ''}`
+            );
+            const inputPort = document.querySelector(
+                `#${conn.inputNodeId} .input${conn.inputPortIndex ? 
+                `[data-port-index="${conn.inputPortIndex}"]` : ''}`
+            );
+            if (outputPort && inputPort) {
+                this.createConnectionBetweenPorts(outputPort, inputPort);
+            }
+        });
+    }
+
+    clearWorkflow() {
+        // Remove all nodes
+        this.nodes.forEach((node, id) => {
+            this.deleteNode(id);
+        });
+        
+        // Clear collections
+        this.nodes.clear();
+        this.connections.clear();
+    }
+
+    restoreNodeData(node, type, data) {
+        if (!data) return;
+
+        switch(type) {
+            case 'input':
+                if (data.prompt) {
+                    node.querySelector('textarea').value = data.prompt;
+                }
+                break;
+            case 'redirect':
+                if (data.prompt) {
+                    node.querySelector('textarea').value = data.prompt;
+                }
+                if (data.locked !== undefined) {
+                    node.querySelector('input[type="checkbox"]').checked = data.locked;
+                }
+                break;
+            case 'output':
+                if (data.filename) {
+                    node.querySelector('input[type="text"]').value = data.filename;
+                }
+                if (data.output) {
+                    node.querySelector('textarea').value = data.output;
+                }
+                if (data.autoRelaunch !== undefined) {
+                    node.querySelector('input[type="checkbox"]').checked = data.autoRelaunch;
+                }
+                break;
+            case 'connection':
+                const modelSelect = node.querySelector('select');
+                const ipInput = node.querySelector('input[placeholder*="IP"]');
+                const portInput = node.querySelector('input[placeholder*="Port"]');
+                
+                if (data.model && modelSelect) {
+                    modelSelect.value = data.model;
+                }
+                if (data.ip && ipInput) {
+                    ipInput.value = data.ip;
+                }
+                if (data.port && portInput) {
+                    portInput.value = data.port;
+                }
+                break;
+            case 'combiner':
+                if (data.input1) {
+                    node.dataset.input1 = data.input1;
+                }
+                if (data.input2) {
+                    node.dataset.input2 = data.input2;
+                }
+                break;
+            case 'text':
+                if (data.text) {
+                    node.querySelector('textarea').value = data.text;
+                }
+                break;
+            case 'random':
+                if (data.input1) {
+                    node.dataset.input1 = data.input1;
+                }
+                if (data.options) {
+                    node.querySelector('textarea').value = data.options;
+                }
+                break;
+            case 'list':
+
+                if (data.input1) {
+                    node.dataset.input1 = data.input1;
+                }
+                if (data.options) {
+                    node.querySelector('textarea').value = data.options;
+                }
+                if (data.currentIndex) {
+                    node.dataset.currentIndex = data.currentIndex;
+                }
+                break;
+        }
+    }
+
+    getNodeData(node) {
+        const data = {};
+        switch(node.type) {
+            case 'input':
+                data.prompt = node.element.querySelector('textarea').value;
+                break;
+            case 'output':
+                data.filename = node.element.querySelector('input[type="text"]').value;
+                data.output = node.element.querySelector('textarea').value;
+                data.autoRelaunch = node.element.querySelector('input[type="checkbox"]').checked;
+                break;
+            case 'redirect':
+                data.prompt = node.element.querySelector('textarea').value;
+                data.locked = node.element.querySelector('input[type="checkbox"]').checked;
+                break;
+            case 'connection':
+                data.model = node.element.querySelector('select').value;
+                data.ip = node.element.querySelector('input[placeholder*="IP"]').value;
+                data.port = node.element.querySelector('input[placeholder*="Port"]').value;
+                break;
+            case 'combiner':
+                data.input1 = node.element.dataset.input1 || '';
+                data.input2 = node.element.dataset.input2 || '';
+                break;
+            case 'text':
+                data.text = node.element.querySelector('textarea').value;
+                break;
+            case 'random':
+                data.prompt = node.element.querySelector('textarea').value;
+                data.options = node.element.querySelector('textarea').value;
+                break;
+            case 'list':
+                data.options = node.element.querySelector('textarea').value;
+                data.prompt = node.element.querySelector('textarea').value;
+                data.currentIndex = node.element.dataset.currentIndex || '0';
+                break;
+        }
+        return data;
+    }
+}
+
+let editor;
+
+window.addNode = function(type) {
+    if (editor) {
+        editor.createNode(type, 100, 100);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    editor = new WorkflowEditor();
+});
+</script>
+<div class="footer">
+    <p>Created by Nicolas Rodriguez von der Becke 2024</p>
+    <form action="https://www.paypal.com/donate" method="post" target="_blank">
+        <input type="hidden" name="business" value="zefirostrike@gmail.com" />
+        <input type="hidden" name="no_recurring" value="0" />
+        <input type="hidden" name="currency_code" value="USD" />
+        <input type="submit" class="donate-btn" value="Donate via PayPal" />
+    </form>
+</div>
+</body></html>

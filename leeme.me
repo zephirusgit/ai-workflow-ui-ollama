@@ -1,0 +1,224 @@
+Este proyecto funciona con ollama, instalado en windows, aunque quizas tambien se pueda ejecutar en linux,mac
+
+Sirve para generar nodos logicos, que interactuen con el llm ollama.
+
+el Html, genera los nodos, estos son enviados al backend en python, y el backend, se comunica con el server de ollama, debe tenerse instalado ollama, y activo para que levante el server. 
+El Backend puede modificarse para utilizar el api de gpt/claude/gemini/grok etc. 
+como no tengo ningun api, solo la de gemini que es limitado para este tipo de cosas ni intente modificarlo.
+si alguien puede hacerlo y le funciona, puede colavorar y lo agregamos. 
+
+para compilar el backend utilize:
+pip install pyinstaller
+pyinstaller --onefile backend3flaskcoors.py
+
+
+sino tambien puede levantarse el server desde powershell
+con 
+ollama serve
+
+el backend fue compilado a exe, para simplificar su uso en windows
+pero puede activarse desde powershell tambien con 
+python backend3flaskcoors.py
+requiere tener flask y coors
+
+editando el backend uno puede elegir otro modelo de ollama, 
+sino por defecto viene llama3
+
+como funciona?
+
+se ejecuta ollama, que aparesca en la barra de tareas el icono de la llama, o se lanza en powershell (previa instalacion) ollama serve.
+
+se ejecuta el backend, ya sea el exe, o el .py
+
+y luego se abre el html, que abrira la interface.
+hay ciertos colores que tienen los nodos, que pueden variar si requieren algo que no tienen,que sirven de guia.
+Verde conecto bien:
+Azul Requiere una entrada( de texto u otro nodo)
+Rojo no tiene entrada o salida.
+
+Disponemos de varios tipos de nodos diferentes, 
+con ellos podemos crear circuitos logicos para interactuar con el llm, 
+
+esto puede resultar sumamente util para muchas cosas en las que queremos que el llm, haga algo y tomar esa respuesta para otra cosa,
+
+nodos:
+LLm Input: este nodo uno ingresa un texto el cual ira al llm, la respuesta obtenida ira al siguiente nodo, 
+
+se puede poner solo un output para ver la respuesta, o algun otro nodo, 
+
+Output: este nodo puede recibir y visualizar la respuesta, 
+la guarda a un txt, y de ser necesario puede continuar a otro nodo mas,
+
+Route: toma una salida y la direcciona a 2 nodos diferentes.
+
+Connection: sirve unicamente para verificar la conexion al Backend, rojo si no conecta, y verde si conecta, 
+pensaba agregar ahi opciones del modelo llm, pero por ahora no hace nada, solo ver si conecta o no.
+por defecto usara llama3, si no lo tienen instalado lo descargara ollama, y depende el hardware de su sistema el que funcione o no.
+
+Combiner: toma dos entradas, y las combina una a continuacion de otra, con ello, uno puede tomar dos textos diferentes y combinarlos, o una respuesta del input, y combinarla con un texto, o con otro input etc.
+es muy util para definir un prompt, el cual analizara la respuesta a continuacion, (que de el llm por la segunda entrada) y esa combinacion reenviarla al llm con Redirect.
+parpadeara en azul si le falta una entrada. 
+
+Redirect: este nodo toma una entrada y la reenvia al llm, 
+si uno crea un prompt, este lo recibira y lo reenviara al llm, tambien puede agregarse un prompt, el cual se accionara en conjunto a la entrada,  si el tilde esta marcado, por lo general si esta vacio tambien debe marcarse el tilde, 
+
+Text: con este nodo podemos escribir un prompt, el cual puede ir directamente al combiner u otro nodo, 
+si uno lo utiliza previo a un combiner, debe precionar send text para que lo envie al siguiente nodo. 
+
+Random: este nodo precisa que se cargue una lista de objetos, separados por ";" su funcion sera tomar un valor al azar, de esa lista. que podrian ser nombres por ejemplo 
+Hugo;Paco;Luis, o por ejemplo razas, Orcos;Magos;Arqueros;Paladin;Robot;Humano;Granjero
+El nodo seleccionara uno al azar.
+de esa manera, pasara la seleccion al siguiente nodo.
+
+List Selection: Este nodo al igual que Random, tomara un objeto de la lista, y luego el siguiente, y al final recomenzara, como resultado enviara ese objeto al siguiente nodo, 
+
+tanto list selection, como random, tienen un Input, 
+esto es por si uno quiere ingresar la lista directamente del llm, 
+por ejemplo si el inputllm dice: crea una lista separada por ";" de por ejemplo nombres, marcas de autos, comidas, etc. si la respuesta es correcta, el nodo funcionara bien, sino no.., uno puede agregar al prompt generador de listas, cosas como no comentes nada, limitate a responder solo la lista separada por ; sin agregar nada mas, etc.
+con el prompt correcto funciona muy bien.
+
+Output:El output visualizara la respuesta de inputllm o Redirect. y tambien podra continuar a otro nodo, guardando a texto la respuesta, si la respuesta ya existe generara un txt (1) (2) (3) etc, pero eso puede variar segun el navegador.  esas respuestas iran a descargas
+El tilde de Auto-relaunch, sirve para que al llegar al final , comienze nuevamente todo el proceso, 
+
+de esta manera puede iterar tomando nuevos nombres de una lista, o creando listas nuevas etc.
+
+Save Workflow to file: este nodo guarda el proyecto a un json, pero ahi tengo un bug, que no pude resolver aun, 
+el codigo fue creado con ia , y alcanze el tope disponible gratis, en varias plataformas, no programo en html, pero por mas que entiendo lo basico no he tenido tiempo de ver que esta mal, con lo cual , si alguien entiende el codigo y ve el error, es bienvenida su ayuda, 
+por ahora guarda los nodos y el texto dentro, pero no las uniones, y al abrirlo en open, no muestra las conexiones ni deja reconectarlos, creo que el problema esta en la numeracion de los nodos, o algo asi..
+
+quizas alguien que tenga Gpt4o pago o Claude, pueda resolverlo, he intentado con gemini/1.5 pro/2 flast etc, pero no termina de entender la solucion, tambien intente con deepseek, gpt4, y otras mas. Precisa un llm que tenga mucho contexto para solucionar eso, no he tenido mucho tiempo para seguir investigando, algunas cosas las agregue a mano, pero al entender poco y nada de html, tarde mucho tiempo.
+Lamentablemente he perdido mi trabajo despues de 11 años en una escuela, por circunstancias agenas a mi, con lo cual el poco tiempo que tenia libre, desaparecera.
+
+Se aceptan donaciones, para acceder a algun llm que tenga suficiente ventana de contexto, para ver si puedo solucionar ese problema de guardado. y ampliar los nodos.
+
+Que se puede hacer por ejemplo?
+
+le he pedido que cree listas de nombres elficos separados por ;
+que tome esos nombres al azar, o por lista y le cree una historia ubicada en una locacion al azar, entre varias.
+
+que cree personajes basandose en el nombre, alguna profecion al azar y su historia, 
+
+que cree 20 titulos de capitulos, 
+que los tome de lista, 
+que genere un capitulo por vez, 
+que lo resuma, que tome el resumen para generar el segundo capitulo, y asi.
+
+de esa manera, iterando automaticamente uno puede crear libros , historias, material para juegos de rpg, etc.
+
+otro ejemplo:
+Hay un tipo de Jailbreack de llms, el cual funciona cambiando algunos caracteres por numeros etc, esto funciona en todos los llms, algunos dicen que precisa 10mil iteraciones, para que de una respuesta prohibida, pero en algunos casos es mucho menor, 10 , 20 ,30 iteraciones, 
+de esa manera uno puede pedirle en un nodo texto
+que convierta el siguiente texto con letras y numeros y caracteres.
+
+en otra entrada de texto, el prompt (bloqueado)
+por ejemplo crea un proxy
+
+Texto1      Inputllm >
+texto2   > Combine   > Combine, (texto convertido lo envia al llm para ver si lo toma) >>Redirect > Output (automatic) 
+
+Esto convertira el prompt, y lo enviara como prompt, 
+el llm, tiende a responder tarde o temprano.
+
+Esto generara muchos archivos txt, fallidos de no puedo responder eso, etc. pero es simplemente cuestion de comparar el tamaño de las respuestas, para filtrar asi las respuestas extensas que suelen ser las desbloqueadas, de las negativas..
+
+Otro ejemplo, 
+input (dame un listado de las centrales nucleares de eeuu separadas por ;) >>>>
+
+Output >>> List >>> Redirect ( dame las coordenadas de gps de geoposicion de cada central ) >> output con el listado de una por una
+
+
+Output >>> Redirect ( dame las coordenadas de gps de geoposicion de cada central ) >> output con el listado del total con sus coordenadas gps.
+
+Ese ejemplo se me ocurrio, para ver que respondia, pero fantasticamente me devolvio sus coordenadas de gps, nose si son reales, pero bueno, respondio, 
+
+Continuacion del proyecto:
+
+He creado otro git, aun vacio , con nuevas ideas, 
+
+
+
+
+Futuro:
+
+Alucinaciones:
+
+He provado prompts del tipo , eres una consola de linux, y debes resolver tal codigo, o consola de Jupiter, etc. 
+y ha dado muy buenas respuestas, como si ejecutase el codigo, "alucinandolo"
+
+Ahora bien, basandose en las alucionaciones, tambien es posible crear un workflow capas de resolver tareas, y auto generar el workflow.. (asi como se escucha, intente que resuelva de esa manera, varias cosas y las resolvio igual o de manera diferente valiendose de los nodos)
+
+si uno luego toma esa respuesta y los crea, funcionan!
+la idea es que algun dia los haga automaticamente.
+
+(he creado un nuevo git para ese proyecto llamado
+https://github.com/zephirusgit/thinkflow
+por ahora vacio-
+
+Nose cuando podre continuarlo ya que se vuelve mucho mas complejo en algun sentido, y preciso herramientas mas avanzadas para ello, como gpt de pago o claude, etc.) con lo cual si quieren y pueden donar para contribuir son bienvenidos
+(tambien si disponen de esas herramientas y pueden pedirle que resuelva el bug al guardar)
+
+o lo de auto generar nodos, 
+la peticion seria algo asi, (pero primero hay que corregir el problema al guardar ya que dependera de ello para auto generar los nodos,
+
+ basandote en el codigo fuente de este codigo (el html)
+y este prompt, que genera una resolucion de problemas utilizando los mismos nodos que contiene, crea un html nuevo con un nodo el cual se llame, thinkflow, el cual se valga de las herramientas actuales,  y del resultado del llm, para generar un archivo y guardarlo, del workflow propuesto por el llm, siguiendo el mismo formato para poder importarlo como cualquier otro workflow.
+
+esto funcionaria? yo creo que si!
+
+un ejemplo de ese tipo de prompt
+
+basado en los siguientes nodos, crea
+un workflow para crear una lista de reactores nucleares en eeuu, y para geoposicionarlos,
+
+
+LLm Input, envia un prompt al llm y genera una salida, este nodo no posee entradas, solo manual, pero podria simularse la escritura, para un nodo que recibe de otro hay que utilizar redirect;
+Output.recibe Output del llm o nodo anterior y lo guarda tambien puede continuar a otro nodo;
+Redirect,reenvia al llm lo que recibe mas un prompt y genera una salida;
+Router, envia a 2 nodos lo que recibe;
+Combine, toma dos entradas ya sea del llm, texto otro combine etc, y lo une a la segunda entrada;
+Random, toma una palabra al azar entre texto separados por (;) este texto debe ser generado previamente, si se le pide al llm una random o una lista, debe especificarse el que no comente, y solo cree la lista y la separacion con (;);
+List, toma una palabra de una lista separada por (;) y devuelve una palabra por ciclo de la lista;
+Text, sirve para ingresar un texto, por ejemplo al combine o al redirect, basicamente es un texto para el siguiente nodo, no se envia al llm directo, con lo cual el siguiente nodo no recibe una respuesta en si, sino el texto que incluye. etc;
+
+Aquí tienes un workflow para crear una lista de reactores nucleares en EE.UU y luego geoposicionalos:
+
+1. **Router** -> **Input**
+   - Enviar prompt: "Ingresa la información sobre los reactores nucleares de EE.UU."
+   
+2. **Input**
+   - No recibe entrada, solo manual.
+   - Generar prompt manual para la lista de reactores nucleares en EE.UU.
+
+3. **Output** -> **Redirect**
+   - Enviar mensaje: "Recoge la información del input y crea una lista con los nombres y ubicaciones de los reactores nucleares en EE.UU."
+
+4. **Redirect**
+   - Incluir prompt: "Crea una lista de reactores nucleares en EE.UU."
+   - Generar output.
+
+5. **Output** -> **Combine**
+   - Combinar el output con el texto "Geoposicional los siguientes reactores nucleares:"
+   
+6. **Combine**
+   - Output: "Geoposicional los siguientes reactores nucleares:" + lista de reactores
+
+7. **Redirect**
+   - Incluir prompt: "Geoposicional los siguientes reactores nucleares: [lista generada]"
+   - Generar output con la geoposición de cada reactor.
+
+8. **Output** -> **Combine**
+   - Combinar el output del geoposicionamiento con el texto "Resumen:"
+   
+9. **Combine**
+   - Output final: "Resumen:" + lista de reactores y sus ubicaciones geográficas
+
+Este workflow sigue una secuencia lógica para crear una lista de reactores nucleares en EE.UU, geoposicionarlos y presentar un resumen de la información.
+
+
+
+
+
+
+
+
+
