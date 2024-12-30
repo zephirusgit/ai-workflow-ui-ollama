@@ -1,3 +1,6 @@
+Finally thanks to lia, vs code, and a lot of patience I found all the problems and now saving and loading nodes works.!!!!
+
+
 This project works with ollama, installed on windows, although it may also be able to run on linux, mac
 
 It is used to generate logical nodes, which interact with the llm ollama.
@@ -81,12 +84,11 @@ The Auto-relaunch check mark is used so that when you reach the end, the whole p
 
 This way you can iterate by taking new names from a list, or creating new lists, etc.
 
+---------fixed-----------------
 Save Workflow to file: This node saves the project to a json, but there I have a bug, which I could not solve yet,
 the code was created with ia, and I reached the limit available for free, on several platforms, I do not program in html, but as much as I understand the basics I have not had time to see what is wrong, so, if someone understands the code and sees the error, your help is welcome,
 for now it saves the nodes and the text inside, but not the unions, and when opening it in open, it does not show the connections or let you reconnect them, I think the problem is in the numbering of the nodes, or something like that..
-
-maybe someone who has paid Gpt4o or Claude, can solve it, I have tried with gemini/1.5 pro/2 flast etc, but I do not fully understand the solution, I also tried with deepseek, gpt4, and others. I need an llm that has a lot of context to solve that, I haven't had much time to continue investigating, I added some things by hand, but since I understand little or nothing about html, it took me a long time.
-Unfortunately I lost my job after 11 years in a school, due to circumstances beyond my control, so the little free time I had will disappear.
+---------fixed-----------------
 
 Donations are accepted, to access an llm that has enough context window, to see if I can solve that saving problem. and expand the nodes.
 
