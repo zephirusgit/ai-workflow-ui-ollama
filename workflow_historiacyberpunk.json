@@ -1,0 +1,138 @@
+{
+  "nodes": [
+    {
+      "id": "node-1735549620323-2gw9n4ul2",
+      "type": "input",
+      "position": {
+        "left": 100,
+        "top": 100
+      },
+      "data": {
+        "prompt": "has una lista de nombres de personas cyberpunks separados por ;\nno agregues o ni comentes nada mas, solo la lista"
+      }
+    },
+    {
+      "id": "node-1735549669001-dquh11nfm",
+      "type": "output",
+      "position": {
+        "left": 418,
+        "top": 72
+      },
+      "data": {
+        "filename": "output_1735549669001",
+        "autoRelaunch": false,
+        "content": "Morgan;Kira;Nova;Raven;Echo;Frost;Ghost;Nova;Vex;Aria;Shadow;Luna;Viper;Coral;Nebula;Jasper;Atlas;Zephyr;Sylas;Vesper;Blaze;Thorn"
+      }
+    },
+    {
+      "id": "node-1735549733739-xqp77das4",
+      "type": "list",
+      "position": {
+        "left": 740,
+        "top": 247
+      },
+      "data": {
+        "options": "Morgan;Kira;Nova;Raven;Echo;Frost;Ghost;Nova;Vex;Aria;Shadow;Luna;Viper;Coral;Nebula;Jasper;Atlas;Zephyr;Sylas;Vesper;Blaze;Thorn",
+        "currentIndex": "4"
+      }
+    },
+    {
+      "id": "node-1735549774412-xc4dzw555",
+      "type": "text",
+      "position": {
+        "left": 730,
+        "top": 52
+      },
+      "data": {
+        "content": "Inventa una historia para el siguiente personaje:"
+      }
+    },
+    {
+      "id": "node-1735549782989-3a3dhjbqj",
+      "type": "combiner",
+      "position": {
+        "left": 1045,
+        "top": 189
+      },
+      "data": {
+        "input1": "Inventa una historia para el siguiente personaje:",
+        "input2": "Raven",
+        "display1": "Inventa una historia para el siguiente personaje:",
+        "display2": "Raven"
+      }
+    },
+    {
+      "id": "node-1735549817020-fwd1pgox0",
+      "type": "redirect",
+      "position": {
+        "left": 1435,
+        "top": 208
+      },
+      "data": {
+        "prompt": "",
+        "locked": true
+      }
+    },
+    {
+      "id": "node-1735549823014-4wl9d590u",
+      "type": "output",
+      "position": {
+        "left": 1129,
+        "top": 414
+      },
+      "data": {
+        "filename": "output_1735549823014",
+        "autoRelaunch": false,
+        "content": "Aquí tienes una breve historia sobre un personaje llamado Raven:\n\nEn un pequeño pueblo de montaña, habitaba un niño misterioso llamado Raven. A diferencia de sus compañeros, Raven no tenía cabello ni piel humanos. Su cuerpo era negro como la noche y lucía ojos azules profundos.\n\nRaven siempre vivió en soledad, pues su única compañía eran los murciélagos que le acompañaban durante las noches oscuras. A pesar de su apariencia inusual, tenía un corazón amable y una gran curiosidad por el mundo que lo rodeaba.\n\nUn día, mientras observaba a los animales en el bosque cercano, escuchó unas voces diferentes. Intrigado, se acercó a esconderse detrás de una roca para oír mejor.\n\nLas personas que llegó a ser Raven eran originarias del pueblo y discutían sobre cómo hacer algo importante pero no recordaban cómo lo hacían. Raven escuchó atentamente sus conversaciones y, inspirado por su conocimiento de los animales y la naturaleza, propuso una solución creativa y sencilla.\n\nFue así como Raven se convirtió en un líder y ayudó a resolver problemas que el pueblo había estado luchando durante mucho tiempo. Sus ideas innovadoras y su amabilidad ganaron a los habitantes del pueblo de corazón y confianza.\n\nRaven vivió muchas años ayudando y compartiendo sus conocimientos con todos, demostrando que la diferencia entre las personas es solo una apariencia exterior y que lo importante es el coraje y la bondad dentro de uno."
+      }
+    }
+  ],
+  "connections": [
+    {
+      "outputNodeId": "node-1735549620323-2gw9n4ul2",
+      "inputNodeId": "node-1735549669001-dquh11nfm",
+      "outputPortIndex": null,
+      "inputPortIndex": null
+    },
+    {
+      "outputNodeId": "node-1735549669001-dquh11nfm",
+      "inputNodeId": "node-1735549733739-xqp77das4",
+      "outputPortIndex": null,
+      "inputPortIndex": null
+    },
+    {
+      "outputNodeId": "node-1735549774412-xc4dzw555",
+      "inputNodeId": "node-1735549782989-3a3dhjbqj",
+      "outputPortIndex": null,
+      "inputPortIndex": "1"
+    },
+    {
+      "outputNodeId": "node-1735549733739-xqp77das4",
+      "inputNodeId": "node-1735549782989-3a3dhjbqj",
+      "outputPortIndex": null,
+      "inputPortIndex": "2"
+    },
+    {
+      "outputNodeId": "node-1735549782989-3a3dhjbqj",
+      "inputNodeId": "node-1735549817020-fwd1pgox0",
+      "outputPortIndex": null,
+      "inputPortIndex": null
+    },
+    {
+      "outputNodeId": "node-1735549817020-fwd1pgox0",
+      "inputNodeId": "node-1735549823014-4wl9d590u",
+      "outputPortIndex": null,
+      "inputPortIndex": null
+    }
+  ],
+  "connectionConfig": {
+    "ip": "localhost",
+    "port": "5000",
+    "model": "qwen2.5-coder"
+  },
+  "zoomLevel": 1,
+  "panOffset": {
+    "x": 0,
+    "y": 0
+  }
+}
